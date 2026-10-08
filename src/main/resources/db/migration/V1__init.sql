@@ -1,0 +1,15 @@
+create table appointments (duration integer not null, is_paid boolean not null, price numeric(38,2) not null, created_at timestamp(6) not null, end_time timestamp(6) not null, start_time timestamp(6) not null, client_id uuid not null, id uuid not null, service_id uuid not null, specialist_id uuid not null, status varchar(20) not null check (status in ('PLANNED','CANCELLED','DELETED','COMPLETED')), note varchar(500), receipt_url varchar(255), primary key (id));
+create table clients (created_at timestamp(6) not null, updated_at timestamp(6) not null, id uuid not null, name varchar(50), email varchar(100) not null unique, nickname varchar(100), primary key (id));
+create table notes (created_at timestamp(6) not null, updated_at timestamp(6) not null, client_id uuid not null, id uuid not null, specialist_id uuid not null, note_name varchar(100) not null, attachment_url varchar(500), primary key (id));
+create table schedule_exceptions (end_time timestamp(6) not null, start_time timestamp(6) not null, id uuid not null, specialist_id uuid not null, type varchar(20) not null check (type in ('AVAILABLE','BLOCKED')), primary key (id));
+create table services (duration integer not null, is_active boolean not null, price numeric(10,2) not null, created_at timestamp(6) not null, id uuid not null, specialist_id uuid not null, service_name varchar(100) not null, description varchar(1000), primary key (id));
+create table specialists (created_at timestamp(6) not null, id uuid not null, email varchar(100) not null unique, full_name varchar(100) not null, slug varchar(100) unique, avatar_url varchar(255), description varchar(255), iban varchar(255), password_hash varchar(255) not null, payment_details varchar(255), primary key (id));
+create table working_hours (end_time time(6) not null, start_time time(6) not null, day_of_week varchar(10) not null check (day_of_week in ('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY')), id uuid not null, specialist_id uuid not null, primary key (id));
+alter table if exists appointments add constraint FKfbl6cciquyyvv5s1e31qmflkb foreign key (client_id) references clients;
+alter table if exists appointments add constraint FK5iltr7k9pows18hk8nc101vc1 foreign key (service_id) references services;
+alter table if exists appointments add constraint FKla5m7grca1orgd3e5vipc9jbs foreign key (specialist_id) references specialists;
+alter table if exists notes add constraint FK58fve4vpt5cijxcywdfdqrcf5 foreign key (client_id) references clients;
+alter table if exists notes add constraint FKn907ypmmi086mngu1o1jm5v65 foreign key (specialist_id) references specialists;
+alter table if exists schedule_exceptions add constraint FKb7d6t07p2bccbhp068p5u6ur7 foreign key (specialist_id) references specialists;
+alter table if exists services add constraint FK1mfvsqe83dnnnsutjeetn6615 foreign key (specialist_id) references specialists;
+alter table if exists working_hours add constraint FK3ixawjqqq1vjdppgbkvb3m863 foreign key (specialist_id) references specialists;

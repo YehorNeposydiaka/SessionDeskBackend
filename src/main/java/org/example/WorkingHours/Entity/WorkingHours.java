@@ -7,6 +7,7 @@ import org.example.Specialist.Entity.Specialist;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -30,8 +31,8 @@ public class WorkingHours {
     private DayOfWeek dayOfWeek;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private LocalTime startTime;
 
     @Column(nullable = false)
-    private LocalDateTime endTime;
+    private LocalTime endTime;
 }
