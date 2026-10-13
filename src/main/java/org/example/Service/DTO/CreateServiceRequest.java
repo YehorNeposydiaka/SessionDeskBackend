@@ -6,7 +6,6 @@ import org.example.Specialist.Entity.Specialist;
 import java.math.BigDecimal;
 
 public record CreateServiceRequest (
-    //TODO: create duration step check
     @NotBlank(message = "Name is required")
     @Size(min = 2, max = 100,
             message = "Name must be between 2 and 100 characters")
