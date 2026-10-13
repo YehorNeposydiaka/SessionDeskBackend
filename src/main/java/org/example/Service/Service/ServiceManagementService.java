@@ -48,9 +48,12 @@ public class ServiceManagementService {
         List<org.example.Service.Entity.Service> services = serviceRepository.findAllServiceBySpecialist_Id(specialistId);
 
         return services.stream()
-                .map(service -> toServiceResponse(service))
+                .map(this::toServiceResponse)
                 .toList();
     }
+    //TODO: create method to find service by slug(for clients)
+
+
     private ServiceResponse toServiceResponse(org.example.Service.Entity.Service service){
         return new ServiceResponse(
                 service.getId(),
