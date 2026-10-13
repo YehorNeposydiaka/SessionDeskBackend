@@ -75,7 +75,7 @@ public class SpecialistService {
         specialistRepository.delete(specialist);
     }
 
-    //Method converts entity to DTO response
+    /** Method maps entity to DTO response*/
     private SpecialistResponse toSpecialistResponse(Specialist specialist){
         return new SpecialistResponse(
                 specialist.getId(),
