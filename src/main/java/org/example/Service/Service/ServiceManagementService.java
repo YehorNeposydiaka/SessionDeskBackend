@@ -68,6 +68,9 @@ public class ServiceManagementService {
         org.example.Service.Entity.Service service = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ApiException("Service not found",HttpStatus.NOT_FOUND));
 
+        if(service.getSpecialist().getId() != specialistId)
+            throw new ApiException("Service can be edited only by its creator",HttpStatus.FORBIDDEN);
+
         if(request.serviceName() != null) service.setServiceName(request.serviceName());
         if(request.description() != null) service.setDescription(request.description());
         if(request.price() != null) service.setPrice(request.price());
