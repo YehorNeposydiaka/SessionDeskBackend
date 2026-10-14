@@ -1,5 +1,12 @@
 package org.example.WorkingHours.DTO;
 
-public record CreateScheduleExceptionRequest (
+import jakarta.validation.constraints.NotBlank;
+import org.example.WorkingHours.Entity.ScheduleExceptionType;
 
+import java.time.LocalDateTime;
+
+public record CreateScheduleExceptionRequest (
+    @NotBlank LocalDateTime startTime,
+    @NotBlank LocalDateTime endTime,
+    @NotBlank ScheduleExceptionType type
 ){}

@@ -1,5 +1,7 @@
 package org.example.WorkingHours.DTO;
 
-public record AvailableSlotsResponse (
+import java.time.LocalTime;
 
+public record AvailableSlotsResponse (
+        LocalTime slots
 ){}
