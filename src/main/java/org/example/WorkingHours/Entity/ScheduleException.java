@@ -2,10 +2,10 @@ package org.example.WorkingHours.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.Client.Entity.Client;
 import org.example.Specialist.Entity.Specialist;
 
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -24,11 +24,15 @@ public class ScheduleException {
     @JoinColumn(name = "specialist_id", nullable = false)
     private Specialist specialist;
 
-    @Column(nullable = false)
-    private LocalDateTime startTime;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private DayOfWeek dayOfWeek;
 
     @Column(nullable = false)
-    private LocalDateTime endTime;
+    private LocalTime startTime;
+
+    @Column(nullable = false)
+    private LocalTime endTime;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
