@@ -124,7 +124,7 @@ public class WorkingHoursService {
     }
     private WorkingHoursResponse toWorkingHoursResponse(WorkingHours workingHours){
         return new WorkingHoursResponse(workingHours.getId()
-                ,workingHours.getSpecialist()
+                ,workingHours.getSpecialist().getId()
                 ,workingHours.getDayOfWeek()
                 ,workingHours.getStartTime()
                 ,workingHours.getEndTime());

@@ -91,7 +91,7 @@ public class ServiceManagementService {
     private ServiceResponse toServiceResponse(org.example.Service.Entity.Service service){
         return new ServiceResponse(
                 service.getId(),
-                service.getSpecialist(),
+                service.getSpecialist().getId(),
                 service.getServiceName(),
                 service.getDescription(),
                 service.getPrice(),

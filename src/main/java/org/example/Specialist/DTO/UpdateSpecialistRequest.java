@@ -5,8 +5,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateSpecialistRequest(
-
-        @NotBlank(message = "Full name is required")
         @Size(min = 2, max = 100,
                 message = "Full name must be between 2 and 100 characters")
         String fullName,
@@ -29,7 +27,6 @@ public record UpdateSpecialistRequest(
         )
         String iban,
 
-        @NotBlank(message = "Slug is required")
         @Size(min = 3, max = 100,
                 message = "Slug must be between 3 and 100 characters")
         @Pattern(

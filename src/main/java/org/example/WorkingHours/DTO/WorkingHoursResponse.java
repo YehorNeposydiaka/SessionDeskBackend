@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record WorkingHoursResponse (
     UUID id,
-    Specialist specialist,
+    UUID specialistId,
     DayOfWeek day,
     LocalTime startTime,
     LocalTime endTime

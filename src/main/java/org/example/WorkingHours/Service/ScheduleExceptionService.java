@@ -5,16 +5,14 @@ import org.example.Specialist.Entity.Specialist;
 import org.example.Specialist.Repository.SpecialistRepository;
 import org.example.WorkingHours.DTO.*;
 import org.example.WorkingHours.Entity.ScheduleException;
-import org.example.WorkingHours.Entity.WorkingHours;
 import org.example.WorkingHours.Repository.ScheduleExceptionRepository;
-import org.example.WorkingHours.Repository.WorkingHoursRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,75 +28,93 @@ public class ScheduleExceptionService {
     }
 
     @Transactional
-    public List<WorkingHoursResponse> createScheduleException(UUID specialistId, CreateScheduleExceptionRequest request){
+    public ScheduleExceptionResponse createScheduleException(UUID specialistId, CreateScheduleExceptionRequest request){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
 
+        List<ScheduleException> exceptions = scheduleExceptionRepository.findAllBySpecialistIdAndDate(specialist.getId(), request.date());
 
-        return toScheduleExceptionResponse(scheduleException);
+        ScheduleException exception = ScheduleException.builder().date(request.date())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .specialist(specialist)
+                .type(request.type()).build();
+
+        validateNoOverlap(exception.getDate(), exception.getStartTime(), exception.getEndTime(), exceptions, null);
+
+        scheduleExceptionRepository.save(exception);
+        return toScheduleExceptionResponse(exception);
     }
 
-    public List<WorkingHoursResponse> getAllScheduleExceptionByDay(UUID specialistId){
+    public List<ScheduleExceptionResponse> getSpecialistScheduleException(UUID specialistId, LocalDate startDate, LocalDate endDate){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
-        List<WorkingHours> workingHours = workingHoursRepository.findAllWorkingHoursBySpecialist_Id(specialist.getId());
+        if(startDate.isAfter(endDate)){
+            throw new ApiException("Invalid time range", HttpStatus.BAD_REQUEST);
+        }
+        if(ChronoUnit.DAYS.between(startDate, endDate) >= 31){
+            throw new ApiException("Choose period between 1 to 31 day", HttpStatus.BAD_REQUEST);
+        }
+        List<ScheduleException> exceptions = scheduleExceptionRepository.findAllBySpecialistIdAndDateBetween(specialist.getId(), startDate, endDate);
 
-        return workingHours.stream().map(this::toScheduleExceptionResponse).toList();
+        return exceptions.stream().map(this::toScheduleExceptionResponse).toList();
     }
 
     @Transactional
-    public WorkingHoursResponse updateScheduleException(UUID specialistId, UUID workingHourId, UpdateWorkingHoursRequest request){
+    public ScheduleExceptionResponse updateScheduleException(UUID specialistId, UUID exceptionId, UpdateScheduleExceptionRequest request){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
-        WorkingHours workingHour = workingHoursRepository.findById(workingHourId)
+        ScheduleException exception = scheduleExceptionRepository.findById(exceptionId)
                 .orElseThrow(() -> new ApiException("Working hours not found", HttpStatus.NOT_FOUND));
-        if(!workingHour.getSpecialist().getId().equals(specialist.getId())){
-            throw new ApiException("Specialist can manage only its own working hours",HttpStatus.FORBIDDEN);
+        if(!exception.getSpecialist().getId().equals(specialist.getId())){
+            throw new ApiException("Specialist can manage only its own schedule exceptions",HttpStatus.FORBIDDEN);
         }
 
-        DayOfWeek targetDay = workingHour.getDayOfWeek();
-        LocalTime targetStart = request.startTime() != null ? request.startTime() : workingHour.getStartTime();
-        LocalTime targetEnd = request.endTime() != null ? request.endTime() : workingHour.getEndTime();
+        LocalDate targetDay = exception.getDate();
+        LocalTime targetStart = request.startTime() != null ? request.startTime() : exception.getStartTime();
+        LocalTime targetEnd = request.endTime() != null ? request.endTime() : exception.getEndTime();
 
-        List<WorkingHours> existingHours = workingHoursRepository.findAllWorkingHoursBySpecialist_Id(specialistId);
+        List<ScheduleException> exceptions = scheduleExceptionRepository.findAllBySpecialistIdAndDateBetween(specialist.getId(), targetDay, targetDay);
 
-        workingHour.setDayOfWeek(targetDay);
-        workingHour.setStartTime(targetStart);
-        workingHour.setEndTime(targetEnd);
+        validateNoOverlap(targetDay, targetStart, targetEnd, exceptions, exception.getId());
 
-        workingHoursRepository.save(workingHour);
-        return toScheduleExceptionResponse(workingHour);
+        exception.setStartTime(targetStart);
+        exception.setEndTime(targetEnd);
+        if(request.type() != null) exception.setType(request.type());
+
+        scheduleExceptionRepository.save(exception);
+        return toScheduleExceptionResponse(exception);
     }
 
     @Transactional
-    public void deleteScheduleException(UUID specialistId, UUID workingHoursId){
+    public void deleteScheduleException(UUID specialistId, UUID exceptionId){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
-        WorkingHours workingHours = workingHoursRepository.findById(workingHoursId)
-                .orElseThrow(() -> new ApiException("Working hours not found", HttpStatus.NOT_FOUND));
-        if(!workingHours.getSpecialist().getId().equals(specialist.getId())){
-            throw new ApiException("Specialist can manage only its own working hours",HttpStatus.FORBIDDEN);
+        ScheduleException exception = scheduleExceptionRepository.findById(exceptionId)
+                .orElseThrow(() -> new ApiException("Schedule exception not found", HttpStatus.NOT_FOUND));
+        if(!exception.getSpecialist().getId().equals(specialist.getId())){
+            throw new ApiException("Specialist can manage only its own schedule exceptions",HttpStatus.FORBIDDEN);
         }
 
-        workingHoursRepository.delete(workingHours);
+        scheduleExceptionRepository.delete(exception);
     }
 
-    private void validateNoOverlap(DayOfWeek day, LocalTime startTime, LocalTime endTime,
-                                   List<ScheduleException> existingHours, UUID excludeWorkingHoursId){
+    private void validateNoOverlap(LocalDate date, LocalTime startTime, LocalTime endTime,
+                                   List<ScheduleException> existingExceptions, UUID excludeExceptionId){
         if (startTime.isAfter(endTime) || startTime.equals(endTime)) {
             throw new ApiException("Start time must be before end time", HttpStatus.BAD_REQUEST);
         }
 
-        for (ScheduleException existing : existingHours) {
-            if (excludeWorkingHoursId != null && existing.getId().equals(excludeWorkingHoursId)) {
+        for (ScheduleException existing : existingExceptions) {
+            if (excludeExceptionId != null && existing.getId().equals(excludeExceptionId)) {
                 continue;
             }
 
-            if (existing.getDayOfWeek().equals(day)) {
+            if (existing.getDate().equals(date)) {
                 boolean isOverlapping = startTime.isBefore(existing.getEndTime())
                         && endTime.isAfter(existing.getStartTime());
                 if (isOverlapping) {
-                    throw new ApiException("Working hours overlap with existing schedule on " + day, HttpStatus.CONFLICT);
+                    throw new ApiException("Working hours overlap with existing schedule on " + date, HttpStatus.CONFLICT);
                 }
             }
         }
@@ -106,10 +122,11 @@ public class ScheduleExceptionService {
     }
 
     private ScheduleExceptionResponse toScheduleExceptionResponse(ScheduleException scheduleException){
-        return new WorkingHoursResponse(workingHours.getId()
-                ,workingHours.getSpecialist()
-                ,workingHours.getDayOfWeek()
-                ,workingHours.getStartTime()
-                ,workingHours.getEndTime());
+        return new ScheduleExceptionResponse(scheduleException.getId()
+                ,scheduleException.getSpecialist().getId()
+                ,scheduleException.getDate()
+                ,scheduleException.getStartTime()
+                ,scheduleException.getEndTime()
+                , scheduleException.getType());
     }
 }

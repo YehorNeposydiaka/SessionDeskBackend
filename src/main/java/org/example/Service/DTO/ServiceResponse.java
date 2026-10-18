@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record ServiceResponse (
         UUID id,
-        Specialist specialist,
+        UUID specialistId,
         String serviceName,
         String description,
         BigDecimal price,

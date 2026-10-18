@@ -5,6 +5,7 @@ import lombok.*;
 import org.example.Specialist.Entity.Specialist;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public class ScheduleException {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private DayOfWeek dayOfWeek;
+    private LocalDate date;
 
     @Column(nullable = false)
     private LocalTime startTime;
