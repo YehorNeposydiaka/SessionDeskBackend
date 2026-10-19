@@ -61,6 +61,9 @@ public class Appointment {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false, updatable = false, length = 20)
+    private BookingSource source;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
