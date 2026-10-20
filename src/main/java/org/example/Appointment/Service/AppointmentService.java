@@ -18,7 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Service
 public class AppointmentService {
@@ -72,7 +72,7 @@ public class AppointmentService {
 
         long duration = service.getDuration();
 
-        LocalDateTime endTime = request.startTime().plusMinutes(duration);
+        LocalTime endTime = request.startTime().plusMinutes(duration);
         if (duration <= 0) {
             throw new ApiException("Service duration must be positive", HttpStatus.CONFLICT);
         }
@@ -81,6 +81,7 @@ public class AppointmentService {
                 .client(client)
                 .specialist(specialist)
                 .service(service)
+                .date(request.date())
                 .startTime(request.startTime())
                 .endTime(endTime)
                 .status(AppointmentStatus.PLANNED)
@@ -92,11 +93,11 @@ public class AppointmentService {
 
         switch (source){
             case CLIENT -> {
-                if(!availabilityService.AvailabilityForClient())
+                if(!availabilityService.AvailabilityForClient(appointment.getDate(), appointment.getStartTime(), appointment.getEndTime(), specialist.getId()))
                     throw new ApiException("Time is booked",HttpStatus.CONFLICT);
             }
             case SPECIALIST -> {
-                if(!availabilityService.AvailabilityForSpecialist())
+                if(!availabilityService.AvailabilityForSpecialist(appointment.getDate(), appointment.getStartTime(), appointment.getEndTime(), specialist.getId()))
                     throw new ApiException("Time is already booked",HttpStatus.CONFLICT);
             }
             default -> {
@@ -113,6 +114,7 @@ public class AppointmentService {
                 appointment.getClient().getId(),
                 appointment.getSpecialist().getId(),
                 appointment.getService().getId(),
+                appointment.getDate(),
                 appointment.getStartTime(),
                 appointment.getEndTime(),
                 appointment.getStatus(),

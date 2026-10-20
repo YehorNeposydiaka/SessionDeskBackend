@@ -7,7 +7,9 @@ import org.example.Service.Entity.Service;
 import org.example.Specialist.Entity.Specialist;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -35,10 +37,13 @@ public class Appointment {
     private Service service;
 
     @Column(nullable = false)
-    private LocalDateTime startTime;
+    private LocalDate date;
 
     @Column(nullable = false)
-    private LocalDateTime endTime;
+    private LocalTime startTime;
+
+    @Column(nullable = false)
+    private LocalTime endTime;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

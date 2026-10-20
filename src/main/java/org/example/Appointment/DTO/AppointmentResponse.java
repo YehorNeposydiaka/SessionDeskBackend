@@ -4,7 +4,9 @@ import org.example.Appointment.Entity.AppointmentStatus;
 import org.example.Appointment.Entity.BookingSource;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 public record AppointmentResponse(
@@ -12,8 +14,9 @@ public record AppointmentResponse(
         UUID clientId,
         UUID specialistId,
         UUID serviceId,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
+        LocalDate date,
+        LocalTime startTime,
+        LocalTime endTime,
         AppointmentStatus status,
         boolean isPaid,
         String receiptUrl,
