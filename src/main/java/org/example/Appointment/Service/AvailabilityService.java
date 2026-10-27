@@ -28,13 +28,13 @@ public class AvailabilityService {
         this.appointmentRepository = appointmentRepository;
     }
 
-    public boolean AvailabilityForClient(LocalDate date, LocalTime startTime, LocalTime endTime, UUID specialistId){
+    public boolean availabilityForClient(LocalDate date, LocalTime startTime, LocalTime endTime, UUID specialistId){
         return workingHoursCheck(date, startTime, endTime, specialistId)
                 && appointmentCheck(date, startTime, endTime, specialistId)
                 && scheduleExceptionCheck(date, startTime, endTime, specialistId);
     }
 
-    public boolean AvailabilityForSpecialist(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId){
+    public boolean availabilityForSpecialist(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId){
         return appointmentCheck(date, startTime, endTime, specialistId);
     }
 

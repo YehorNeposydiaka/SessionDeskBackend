@@ -1,7 +1,9 @@
 package org.example.Appointment.Service;
 
-import org.example.Appointment.DTO.AppointmentResponse;
+import org.example.Appointment.DTO.ClientAppointmentResponse;
+import org.example.Appointment.DTO.SpecialistAppointmentDetails;
 import org.example.Appointment.DTO.CreateAppointmentRequest;
+import org.example.Appointment.DTO.SpecialistAppointmentSummary;
 import org.example.Appointment.Entity.Appointment;
 import org.example.Appointment.Entity.AppointmentStatus;
 import org.example.Appointment.Entity.BookingSource;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Service
 public class AppointmentService {
@@ -44,7 +47,18 @@ public class AppointmentService {
     }
 
     @Transactional
-    public AppointmentResponse createAppointment(String slug, CreateAppointmentRequest request, BookingSource source){
+    public ClientAppointmentResponse createAppointmentByClient(String slug, CreateAppointmentRequest request){
+        Appointment appointment = createAppointmentInternal(slug, request, BookingSource.CLIENT);
+        return toClientAppointmentResponse(appointment);
+    }
+
+    @Transactional
+    public SpecialistAppointmentDetails createAppointmentBySpecialist(String slug, CreateAppointmentRequest request){
+        Appointment appointment = createAppointmentInternal(slug, request, BookingSource.SPECIALIST);
+        return toAppointmentDetails(appointment);
+    }
+
+    private Appointment createAppointmentInternal(String slug, CreateAppointmentRequest request, BookingSource source){
         Specialist specialist = specialistRepository.findBySlug(slug)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
         Client client = clientRepository.findById(request.clientId())
@@ -91,29 +105,43 @@ public class AppointmentService {
                 .source(source)
                 .build();
 
-        switch (source){
-            case CLIENT -> {
-                if(!availabilityService.AvailabilityForClient(appointment.getDate(), appointment.getStartTime(), appointment.getEndTime(), specialist.getId()))
-                    throw new ApiException("Time is booked",HttpStatus.CONFLICT);
-            }
-            case SPECIALIST -> {
-                if(!availabilityService.AvailabilityForSpecialist(appointment.getDate(), appointment.getStartTime(), appointment.getEndTime(), specialist.getId()))
-                    throw new ApiException("Time is already booked",HttpStatus.CONFLICT);
-            }
-            default -> {
-                    throw new ApiException("Unknown booking source",HttpStatus.FORBIDDEN);
-            }
-        }
+        boolean available = switch (source) {
+            case CLIENT -> availabilityService.availabilityForClient(request.date(), request.startTime(), endTime, specialist.getId());
+            case SPECIALIST -> availabilityService.availabilityForSpecialist(request.date(), request.startTime(), endTime, specialist.getId());
+        };
+        if (!available)
+            throw new ApiException("Time is booked", HttpStatus.CONFLICT);
 
         appointmentRepository.save(appointment);
-        return toAppointmentResponse(appointment);
+        return appointment;
     }
 
-    private AppointmentResponse toAppointmentResponse(Appointment appointment){
-        return new AppointmentResponse(appointment.getId(),
+   //mark as paid(toggle paid + attach bill)
+    // complete cancel appointment
+    // update appointment
+    // get specialist appointment by period
+    // get by client
+    // get details(by id)
+
+    @Transactional(readOnly = true)
+    public SpecialistAppointmentDetails getAppointmentDetails(UUID specialistId, UUID appointmentId){
+        Specialist specialist = specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ApiException("Appointment not found",HttpStatus.NOT_FOUND));
+        if(!appointment.getSpecialist().getId().equals(specialist.getId()))
+            throw new ApiException("Appointment not belongs to specialist", HttpStatus.FORBIDDEN);
+
+        return toAppointmentDetails(appointment);
+    }
+
+    private SpecialistAppointmentDetails toAppointmentDetails(Appointment appointment){
+        return new SpecialistAppointmentDetails(appointment.getId(),
                 appointment.getClient().getId(),
                 appointment.getSpecialist().getId(),
                 appointment.getService().getId(),
+                appointment.getClient().getName(),
+                appointment.getService().getServiceName(),
                 appointment.getDate(),
                 appointment.getStartTime(),
                 appointment.getEndTime(),
@@ -126,5 +154,35 @@ public class AppointmentService {
                 appointment.getCreatedAt(),
                 appointment.getSource()
                 );
+    }
+    private ClientAppointmentResponse toClientAppointmentResponse(Appointment appointment) {
+        return new ClientAppointmentResponse(
+                appointment.getId(),
+                appointment.getDate(),
+                appointment.getStartTime(),
+                appointment.getEndTime(),
+                appointment.getStatus(),
+                appointment.getSpecialist().getFullName(),
+                appointment.getService().getServiceName(),
+                appointment.getPrice(),
+                appointment.getDuration(),
+                appointment.isPaid()
+        );
+    }
+
+    private SpecialistAppointmentSummary toSpecialistSummary(Appointment appointment) {
+        return new SpecialistAppointmentSummary(
+                appointment.getId(),
+                appointment.getDate(),
+                appointment.getStartTime(),
+                appointment.getEndTime(),
+                appointment.getStatus(),
+                appointment.getClient().getId(),
+                appointment.getClient().getName(),
+                appointment.getService().getServiceName(),
+                appointment.getPrice(),
+                appointment.isPaid(),
+                appointment.getSource()
+        );
     }
 }
