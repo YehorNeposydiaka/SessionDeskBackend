@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
@@ -13,4 +14,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             LocalDate startDate,
             LocalDate endDate
     );
+    Optional<Appointment> findByIdAndSpecialistId(UUID id, UUID specialistId);
 }

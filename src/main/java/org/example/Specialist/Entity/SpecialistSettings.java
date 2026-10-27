@@ -29,7 +29,7 @@ public class SpecialistSettings {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer minBookingNoticeHours = 2;
+    private Integer minBookingNoticeHours = 8;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id")
