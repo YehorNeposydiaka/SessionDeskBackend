@@ -4,6 +4,7 @@ import org.example.Appointment.DTO.*;
 import org.example.Appointment.Entity.Appointment;
 import org.example.Appointment.Entity.AppointmentStatus;
 import org.example.Appointment.Entity.BookingSource;
+import org.example.Appointment.Entity.ClientActivityProjection;
 import org.example.Appointment.Repository.AppointmentRepository;
 import org.example.Client.Entity.Client;
 import org.example.Client.Repository.ClientRepository;
@@ -13,11 +14,15 @@ import org.example.Specialist.Entity.Specialist;
 import org.example.Specialist.Entity.SpecialistSettings;
 import org.example.Specialist.Repository.SpecialistRepository;
 import org.example.Specialist.Repository.SpecialistSettingRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -110,10 +115,35 @@ public class AppointmentService {
 
         return toAppointmentDetails(appointment);
     }
-   //mark as paid(toggle paid + attach bill)
-    // cancel appointment
+
+    public Page<ClientActivityProjection> getClientAppointmentsAndNotes(UUID specialistId, UUID clientId, int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+
+        return appointmentRepository.findClientActivities(specialistId, clientId, pageable);
+    }
+
+    @Transactional
+    public SpecialistAppointmentDetails toggleCancelAppointmentBySpecialist(UUID specialistId, UUID appointmentId){
+        Appointment appointment = appointmentRepository.findByIdAndSpecialistId(appointmentId, specialistId)
+                .orElseThrow(() -> new ApiException("Appointment not found", HttpStatus.NOT_FOUND));
+
+        switch (appointment.getStatus()) {
+            case PLANNED -> appointment.setStatus(AppointmentStatus.CANCELLED);
+            case CANCELLED -> {
+                boolean free = availabilityService.availabilityForSpecialist(
+                        appointment.getDate(), appointment.getStartTime(), appointment.getEndTime(),
+                        specialistId, appointment.getId());
+                if (!free)
+                    throw new ApiException("Time is already taken, cannot restore appointment", HttpStatus.CONFLICT);
+                appointment.setStatus(AppointmentStatus.PLANNED);
+            }
+            default -> throw new ApiException(
+                    "Appointment with status " + appointment.getStatus() + " cannot be cancelled or restored",
+                    HttpStatus.CONFLICT);
+        }
+        return toAppointmentDetails(appointment);
+    }
     // update appointment
-    // get by client
 
     @Transactional(readOnly = true)
     public SpecialistAppointmentDetails getAppointmentDetails(UUID specialistId, UUID appointmentId){
@@ -125,6 +155,30 @@ public class AppointmentService {
             throw new ApiException("Appointment not belongs to specialist", HttpStatus.FORBIDDEN);
 
         return toAppointmentDetails(appointment);
+    }
+
+    @Transactional
+    public ClientAppointmentResponse cancelAppointmentByClient(UUID clientId, UUID appointmentId) {
+        Appointment appointment = appointmentRepository.findByIdAndClientId(appointmentId, clientId)
+                .orElseThrow(() -> new ApiException("Appointment not found", HttpStatus.NOT_FOUND));
+
+        if (appointment.getStatus() != AppointmentStatus.PLANNED)
+            throw new ApiException("Only planned appointments can be cancelled", HttpStatus.CONFLICT);
+
+        SpecialistSettings settings = specialistSettingRepository
+                .findBySpecialist_Id(appointment.getSpecialist().getId())
+                .orElseThrow(() -> new ApiException("Settings not found", HttpStatus.NOT_FOUND));
+
+        LocalDateTime start = LocalDateTime.of(appointment.getDate(), appointment.getStartTime());
+        LocalDateTime deadline = start.minusHours(settings.getMinBookingNoticeHours());
+
+        if (LocalDateTime.now().isAfter(deadline))
+            throw new ApiException(
+                    "Appointment can be cancelled no later than " + settings.getMinBookingNoticeHours() + " hours before start",
+                    HttpStatus.CONFLICT);
+
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        return toClientAppointmentResponse(appointment);
     }
 
     private Appointment createAppointmentInternal(String slug, CreateAppointmentRequest request, BookingSource source){
@@ -180,9 +234,9 @@ public class AppointmentService {
                 if((int) daysBetween > settings.getMaxBookingDaysAhead()){
                     throw new ApiException("The limit of days for booking has been exceeded",HttpStatus.FORBIDDEN);
                 }
-                yield availabilityService.availabilityForClient(request.date(), request.startTime(), endTime, specialist.getId());
+                yield availabilityService.availabilityForClient(request.date(), request.startTime(), endTime, specialist.getId(), null);
             }
-            case SPECIALIST -> availabilityService.availabilityForSpecialist(request.date(), request.startTime(), endTime, specialist.getId());
+            case SPECIALIST -> availabilityService.availabilityForSpecialist(request.date(), request.startTime(), endTime, specialist.getId(), null);
         };
         if (!available)
             throw new ApiException("Time is booked", HttpStatus.CONFLICT);

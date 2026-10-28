@@ -1,6 +1,7 @@
 package org.example.Appointment.Service;
 
 import org.example.Appointment.Entity.Appointment;
+import org.example.Appointment.Entity.AppointmentStatus;
 import org.example.Appointment.Repository.AppointmentRepository;
 import org.example.WorkingHours.Entity.ScheduleException;
 import org.example.WorkingHours.Entity.ScheduleExceptionType;
@@ -28,14 +29,14 @@ public class AvailabilityService {
         this.appointmentRepository = appointmentRepository;
     }
 
-    public boolean availabilityForClient(LocalDate date, LocalTime startTime, LocalTime endTime, UUID specialistId){
+    public boolean availabilityForClient(LocalDate date, LocalTime startTime, LocalTime endTime, UUID specialistId, UUID exceptionId){
         return workingHoursCheck(date, startTime, endTime, specialistId)
-                && appointmentCheck(date, startTime, endTime, specialistId)
+                && appointmentCheck(date, startTime, endTime, specialistId, exceptionId)
                 && scheduleExceptionCheck(date, startTime, endTime, specialistId);
     }
 
-    public boolean availabilityForSpecialist(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId){
-        return appointmentCheck(date, startTime, endTime, specialistId);
+    public boolean availabilityForSpecialist(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId, UUID exceptionId){
+        return appointmentCheck(date, startTime, endTime, specialistId, exceptionId);
     }
 
     private boolean workingHoursCheck(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId){
@@ -55,14 +56,15 @@ public class AvailabilityService {
         return false;
     }
 
-    private boolean appointmentCheck(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId){
-        List<Appointment> existingAppointments = appointmentRepository.findAllBySpecialistIdAndDateBetween(specialistId, date, date);
+    private boolean appointmentCheck(LocalDate date, LocalTime startTime, LocalTime endTime, UUID  specialistId, UUID exceptionId){
+        List<Appointment> existing = appointmentRepository
+                .findAllBySpecialistIdAndDateBetween(specialistId, date, date);
 
-        if(existingAppointments.isEmpty())
-            return true;
-
-        for(Appointment appointment : existingAppointments){
-            if(appointment.getStartTime().isBefore(endTime) && appointment.getEndTime().isAfter(startTime))
+        for (Appointment a : existing) {
+            if (a.getId().equals(exceptionId)) continue;
+            if (a.getStatus() != AppointmentStatus.CANCELLED
+                    && a.getStartTime().isBefore(endTime)
+                    && a.getEndTime().isAfter(startTime))
                 return false;
         }
         return true;
