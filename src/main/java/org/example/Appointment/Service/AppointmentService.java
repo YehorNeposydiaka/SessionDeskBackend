@@ -27,7 +27,6 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static org.example.Appointment.Entity.AppointmentStatus.COMPLETED;
 
@@ -142,6 +141,44 @@ public class AppointmentService {
                     HttpStatus.CONFLICT);
         }
         return toAppointmentDetails(appointment);
+    }
+
+    @Transactional
+    public ClientAppointmentResponse rescheduleAppointmentByClient(UUID clientId, RescheduleRequest request){
+        Appointment appointment = appointmentRepository.findByIdAndClientId(request.appointmentId(), clientId)
+                .orElseThrow(() -> new ApiException("Appointment not found",HttpStatus.NOT_FOUND));
+        org.example.Service.Entity.Service service = serviceRepository.findById(appointment.getService().getId())
+                .orElseThrow(() -> new ApiException("Service not found",HttpStatus.NOT_FOUND));
+        SpecialistSettings settings = specialistSettingRepository
+                .findBySpecialist_Id(appointment.getSpecialist().getId())
+                .orElseThrow(() -> new ApiException("Settings not found", HttpStatus.NOT_FOUND));
+
+        long duration = service.getDuration();
+
+        LocalTime endTime = request.startTime().plusMinutes(duration);
+        if (duration <= 0) {
+            throw new ApiException("Service duration must be positive", HttpStatus.CONFLICT);
+        }
+        if(!availabilityService.availabilityForClient(request.date(), request.startTime(), endTime, appointment.getSpecialist().getId(), appointment.getId()))
+            throw new ApiException("Time is already booked",HttpStatus.CONFLICT);
+
+        if (appointment.getStatus() != AppointmentStatus.PLANNED)
+            throw new ApiException("Only planned appointments can be rescheduled", HttpStatus.CONFLICT);
+
+        LocalDateTime start = LocalDateTime.of(appointment.getDate(), appointment.getStartTime());
+        LocalDateTime deadline = start.minusHours(settings.getMinBookingNoticeHours());
+
+        if (LocalDateTime.now().isAfter(deadline))
+            throw new ApiException(
+                    "Appointment can be rescheduled no later than " + settings.getMinBookingNoticeHours() + " hours before start",
+                    HttpStatus.CONFLICT);
+
+        appointment.setDate(request.date());
+        appointment.setStartTime(request.startTime());
+        appointment.setEndTime(endTime);
+
+        appointmentRepository.save(appointment);
+        return  toClientAppointmentResponse(appointment);
     }
     // update appointment
 
