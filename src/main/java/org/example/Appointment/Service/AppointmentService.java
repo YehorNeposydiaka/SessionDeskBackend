@@ -80,7 +80,7 @@ public class AppointmentService {
     public List<SpecialistAppointmentSummary> getAllAppointmentsForSpecialist(UUID specialistId, LocalDate startDate, LocalDate endDate){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
-        List<Appointment> appointments = appointmentRepository.findAllBySpecialistIdAndDateBetween(specialistId, startDate, endDate);
+        List<Appointment> appointments = appointmentRepository.findAllBySpecialistIdAndDateBetween(specialist.getId(), startDate, endDate);
 
         return appointments.stream().map(this::toSpecialistSummary).toList();
     }
@@ -156,9 +156,7 @@ public class AppointmentService {
         long duration = service.getDuration();
 
         LocalTime endTime = request.startTime().plusMinutes(duration);
-        if (duration <= 0) {
-            throw new ApiException("Service duration must be positive", HttpStatus.CONFLICT);
-        }
+
         if(!availabilityService.availabilityForClient(request.date(), request.startTime(), endTime, appointment.getSpecialist().getId(), appointment.getId()))
             throw new ApiException("Time is already booked",HttpStatus.CONFLICT);
 
@@ -180,7 +178,60 @@ public class AppointmentService {
         appointmentRepository.save(appointment);
         return  toClientAppointmentResponse(appointment);
     }
-    // update appointment
+
+    @Transactional
+    public SpecialistAppointmentDetails updateAppointmentBySpecialist(UUID specialistId, UUID appointmentId,
+                                                                      UpdateAppointmentRequest request) {
+        Appointment appointment = appointmentRepository.findByIdAndSpecialistId(appointmentId, specialistId)
+                .orElseThrow(() -> new ApiException("Appointment not found", HttpStatus.NOT_FOUND));
+
+        if (request.note() != null)
+            appointment.setNote(request.note());
+
+        boolean serviceChanged = request.serviceId() != null
+                && !request.serviceId().equals(appointment.getService().getId());
+        boolean timeChanged = request.date() != null || request.startTime() != null;
+
+        if (!serviceChanged && !timeChanged)
+            return toAppointmentDetails(appointment);
+
+        if (appointment.getStatus() != AppointmentStatus.PLANNED)
+            throw new ApiException("Only planned appointments can be rescheduled or changed", HttpStatus.CONFLICT);
+
+        org.example.Service.Entity.Service service = appointment.getService();
+        if (serviceChanged) {
+            service = serviceRepository.findByIdAndSpecialist_Id(request.serviceId(), specialistId)
+                    .orElseThrow(() -> new ApiException("Service not found", HttpStatus.NOT_FOUND));
+            if (!service.isActive())
+                throw new ApiException("Service is not active", HttpStatus.CONFLICT);
+        }
+
+        long duration = service.getDuration();
+        if (duration <= 0)
+            throw new ApiException("Service duration must be positive", HttpStatus.CONFLICT);
+
+        LocalDate date = request.date() != null ? request.date() : appointment.getDate();
+        LocalTime start = request.startTime() != null ? request.startTime() : appointment.getStartTime();
+        LocalTime end = start.plusMinutes(duration);
+
+        if (!end.isAfter(start))
+            throw new ApiException("Appointment must end on the same day", HttpStatus.BAD_REQUEST);
+
+        if (!availabilityService.availabilityForSpecialist(date, start, end, specialistId, appointment.getId()))
+            throw new ApiException("Time is already booked", HttpStatus.CONFLICT);
+
+        appointment.setService(service);
+        appointment.setDuration((int) duration);
+        appointment.setDate(date);
+        appointment.setStartTime(start);
+        appointment.setEndTime(end);
+        appointment.setPrice(service.getPrice());
+
+        appointmentRepository.save(appointment);
+
+        return toAppointmentDetails(appointment);
+    }
+
 
     @Transactional(readOnly = true)
     public SpecialistAppointmentDetails getAppointmentDetails(UUID specialistId, UUID appointmentId){
