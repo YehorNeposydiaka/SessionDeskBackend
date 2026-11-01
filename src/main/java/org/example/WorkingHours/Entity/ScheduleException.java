@@ -25,7 +25,6 @@ public class ScheduleException {
     @JoinColumn(name = "specialist_id", nullable = false)
     private Specialist specialist;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private LocalDate date;
 

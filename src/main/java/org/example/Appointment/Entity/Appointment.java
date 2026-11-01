@@ -66,6 +66,7 @@ public class Appointment {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 20)
     private BookingSource source;
 

@@ -60,8 +60,10 @@ public class AppointmentService {
     }
 
     @Transactional
-    public SpecialistAppointmentDetails createAppointmentBySpecialist(String slug, CreateAppointmentRequest request){
-        Appointment appointment = createAppointmentInternal(slug, request, BookingSource.SPECIALIST);
+    public SpecialistAppointmentDetails createAppointmentBySpecialist(UUID specialistId, CreateAppointmentRequest request){
+        Specialist specialist = specialistRepository.findById(specialistId)
+                .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
+        Appointment appointment = createAppointmentInternal(specialist.getSlug(), request, BookingSource.SPECIALIST);
         return toAppointmentDetails(appointment);
     }
 

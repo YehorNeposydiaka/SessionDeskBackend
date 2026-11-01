@@ -53,6 +53,7 @@ public class AuthService {
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .fullName(request.fullName())
+                .slug(request.slug())
                 .build();
         specialistRepository.save(specialist);
 

@@ -21,7 +21,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     );
     Optional<Appointment> findByIdAndSpecialistId(UUID id, UUID specialistId);
     Optional<Appointment> findByIdAndClientId(UUID id, UUID clientId);
-
+    boolean existsBySpecialistIdAndClientId(UUID specialistId, UUID clientId);
     @Query(value = """
         SELECT 
             id, 

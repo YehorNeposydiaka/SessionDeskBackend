@@ -31,7 +31,9 @@ public class Note {
     @Column(nullable = false, length = 100)
     private String noteName;
 
-    //TODO: Change to list of attachments
+    @Column(length = 500)
+    private String body;
+
     @Column(length = 500)
     private String attachmentUrl;
 
