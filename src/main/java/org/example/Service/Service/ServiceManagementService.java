@@ -6,7 +6,9 @@ import org.example.Service.DTO.ServiceResponse;
 import org.example.Service.DTO.UpdateServiceRequest;
 import org.example.Service.Repository.ServiceRepository;
 import org.example.Specialist.Entity.Specialist;
+import org.example.Specialist.Entity.SpecialistSettings;
 import org.example.Specialist.Repository.SpecialistRepository;
+import org.example.Specialist.Repository.SpecialistSettingRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +20,14 @@ import java.util.UUID;
 public class ServiceManagementService {
     private final ServiceRepository serviceRepository;
     private final SpecialistRepository specialistRepository;
+    private final SpecialistSettingRepository specialistSettingRepository;
 
     public ServiceManagementService(ServiceRepository serviceRepository,
-                                    SpecialistRepository specialistRepository){
+                                    SpecialistRepository specialistRepository,
+                                    SpecialistSettingRepository specialistSettingRepository){
         this.serviceRepository = serviceRepository;
         this.specialistRepository = specialistRepository;
+        this.specialistSettingRepository = specialistSettingRepository;
     }
 
     @Transactional
@@ -36,6 +41,13 @@ public class ServiceManagementService {
                 .specialist(specialist).build();
 
         serviceRepository.save(service);
+
+        SpecialistSettings specialistSettings = specialistSettingRepository.findBySpecialist_Id(specialist.getId())
+                .orElseThrow(() -> new ApiException("Specialist settings not found",HttpStatus.NOT_FOUND));
+        if(specialistSettings.getDefaultService() == null) {
+            specialistSettings.setDefaultService(service);
+            specialistSettingRepository.save(specialistSettings);
+        }
         return toServiceResponse(service);
     }
 
@@ -81,10 +93,21 @@ public class ServiceManagementService {
     }
 
     @Transactional
-    public void changeActiveStatus(UUID serviceId){
-        org.example.Service.Entity.Service service = serviceRepository.findById(serviceId)
+    public void changeActiveStatus(UUID serviceId, UUID specialistId){
+        org.example.Service.Entity.Service service = serviceRepository.findByIdAndSpecialist_Id(serviceId, specialistId)
                 .orElseThrow(() -> new ApiException("Service not found",HttpStatus.NOT_FOUND));
-        service.setActive(!service.isActive());
+
+        if (service.isActive()) {   // вимикаємо
+            SpecialistSettings settings = specialistSettingRepository.findBySpecialist_Id(specialistId)
+                    .orElseThrow(() -> new ApiException("Specialist settings not found", HttpStatus.NOT_FOUND));
+
+            org.example.Service.Entity.Service def = settings.getDefaultService();
+            if (def != null && service.getId().equals(def.getId()))
+                throw new ApiException(
+                        "This is the default service, change the default service first",
+                        HttpStatus.CONFLICT);
+        }
+
         serviceRepository.save(service);
     }
 
