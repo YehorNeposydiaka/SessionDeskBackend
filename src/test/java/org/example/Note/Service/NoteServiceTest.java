@@ -39,29 +39,26 @@ class NoteServiceTest {
     private final UUID clientId = UUID.randomUUID();
     private final UUID noteId = UUID.randomUUID();
 
+    private Specialist specialist;
+    private Client client;
+
     @BeforeEach
     void setUp() {
+        specialist = mock(Specialist.class);
+        client = mock(Client.class);
+        lenient().when(client.getId()).thenReturn(clientId);
+
         noteService = new NoteService(noteRepository, specialistRepository,
                 clientRepository, appointmentRepository);
     }
 
     // ---------- helpers ----------
 
-    private Specialist specialist() {
-        return mock(Specialist.class);
-    }
-
-    private Client client() {
-        Client client = mock(Client.class);
-        lenient().when(client.getId()).thenReturn(clientId);
-        return client;
-    }
-
     private Note existingNote() {
         return Note.builder()
                 .id(noteId)
-                .client(client())
-                .specialist(specialist())
+                .client(client)
+                .specialist(specialist)
                 .noteName("Old name")
                 .body("Old body")
                 .attachmentUrl("http://old.url")
@@ -69,8 +66,8 @@ class NoteServiceTest {
     }
 
     private void stubCreateHappyPath() {
-        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist()));
-        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client()));
+        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist));
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
         when(appointmentRepository.existsBySpecialistIdAndClientId(specialistId, clientId)).thenReturn(true);
     }
 
@@ -130,7 +127,7 @@ class NoteServiceTest {
 
     @Test
     void createNote_clientNotFound_throws() {
-        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist()));
+        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist));
         when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
 
         assertThrows(ApiException.class, () -> noteService.createNote(specialistId, clientId,
@@ -141,8 +138,8 @@ class NoteServiceTest {
 
     @Test
     void createNote_clientWithoutAppointments_throwsAndDoesNotSave() {
-        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist()));
-        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client()));
+        when(specialistRepository.findById(specialistId)).thenReturn(Optional.of(specialist));
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
         when(appointmentRepository.existsBySpecialistIdAndClientId(specialistId, clientId)).thenReturn(false);
 
         assertThrows(ApiException.class, () -> noteService.createNote(specialistId, clientId,
