@@ -2,9 +2,7 @@ package org.example.WorkingHours.Controller;
 
 import jakarta.validation.Valid;
 import org.example.Security.UserPrincipal;
-import org.example.WorkingHours.DTO.CreateWorkingHourRequest;
-import org.example.WorkingHours.DTO.UpdateWorkingHoursRequest;
-import org.example.WorkingHours.DTO.WorkingHoursResponse;
+import org.example.WorkingHours.DTO.*;
 import org.example.WorkingHours.Service.ScheduleExceptionService;
 import org.example.WorkingHours.Service.WorkingHoursService;
 import org.springframework.http.HttpStatus;
@@ -56,4 +54,13 @@ public class WorkingHoursController {
         WorkingHoursResponse response = workingHoursService.updateWorkingHours(principal.getId(), workingHourId, request);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/exceptions")
+    public ResponseEntity<ScheduleExceptionResponse> createScheduleException(@AuthenticationPrincipal UserPrincipal principal,
+                                                                             @Valid @RequestBody CreateScheduleExceptionRequest request){
+        ScheduleExceptionResponse response = scheduleExceptionService.createScheduleException(principal.getId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+
 }
