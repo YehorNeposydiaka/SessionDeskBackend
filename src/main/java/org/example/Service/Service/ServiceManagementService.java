@@ -38,6 +38,7 @@ public class ServiceManagementService {
                 .description(request.description())
                 .price(request.price())
                 .duration(request.duration())
+                .isActive(true)
                 .specialist(specialist).build();
 
         serviceRepository.save(service);

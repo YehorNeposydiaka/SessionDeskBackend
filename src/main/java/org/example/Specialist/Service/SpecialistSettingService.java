@@ -48,7 +48,7 @@ public class SpecialistSettingService {
 
         SpecialistSettings settings = SpecialistSettings.builder()
                 .specialist(specialist)
-                .build();   // значення за замовчуванням з @Builder.Default
+                .build();
 
         if (request.maxBookingDaysAhead() != null)
             settings.setMaxBookingDaysAhead(request.maxBookingDaysAhead());
@@ -56,16 +56,19 @@ public class SpecialistSettingService {
             settings.setMinBookingNoticeHours(request.minBookingNoticeHours());
         if (request.serviceSelectable() != null)
             settings.setServiceSelectable(request.serviceSelectable());
-        if (request.defaultServiceId() != null)
-            settings.setDefaultService(findOwnActiveService(request.defaultServiceId(), specialistId));
-        else
-            settings.setDefaultService(org.example.Service.Entity.Service.builder().serviceName("Послуга")
-                    .description("")
-                    .price(BigDecimal.valueOf(100.00))
-                    .duration(60)
-                    .specialist(specialist).build());
+
+        org.example.Service.Entity.Service service = org.example.Service.Entity.Service.builder().serviceName(request.serviceName())
+                .description(request.description())
+                .price(request.price())
+                .duration(request.duration())
+                .isActive(true)
+                .specialist(specialist).build();
+
+
+        settings.setDefaultService(service);
 
         assertConsistent(settings);
+        serviceRepository.save(service);
         return toResponse(settingsRepository.save(settings));
     }
 
