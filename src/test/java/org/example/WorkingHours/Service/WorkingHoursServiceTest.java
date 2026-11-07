@@ -131,7 +131,7 @@ class WorkingHoursServiceTest {
         when(workingHoursRepository.findAllWorkingHoursBySpecialist_Id(specialistId))
                 .thenReturn(List.of(workingHours));
 
-        List<WorkingHoursResponse> responses = workingHoursService.getALLWorkingHoursBySpecialist(specialistId);
+        List<WorkingHoursResponse> responses = workingHoursService.getAllWorkingHoursBySpecialist(specialistId);
 
         assertNotNull(responses);
         assertEquals(1, responses.size());
@@ -139,11 +139,11 @@ class WorkingHoursServiceTest {
     }
 
     @Test
-    void getALLWorkingHoursBySpecialist_SpecialistNotFound() {
+    void getAllWorkingHoursBySpecialist_SpecialistNotFound() {
         when(specialistRepository.findById(specialistId)).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () ->
-                workingHoursService.getALLWorkingHoursBySpecialist(specialistId)
+                workingHoursService.getAllWorkingHoursBySpecialist(specialistId)
         );
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());

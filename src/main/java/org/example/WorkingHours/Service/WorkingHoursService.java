@@ -54,7 +54,7 @@ public class WorkingHoursService {
         return hours.stream().map(this::toWorkingHoursResponse).toList();
     }
 
-    public List<WorkingHoursResponse> getALLWorkingHoursBySpecialist(UUID specialistId){
+    public List<WorkingHoursResponse> getAllWorkingHoursBySpecialist(UUID specialistId){
         Specialist specialist = specialistRepository.findById(specialistId)
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
         List<WorkingHours> workingHours = workingHoursRepository.findAllWorkingHoursBySpecialist_Id(specialist.getId());
