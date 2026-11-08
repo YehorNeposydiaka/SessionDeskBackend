@@ -24,6 +24,7 @@ public class Client {
     @Column(length = 50)
     private String name;
 
+    //TODO: add messenger marker
     @Column(length = 100)
     private String nickname;
 

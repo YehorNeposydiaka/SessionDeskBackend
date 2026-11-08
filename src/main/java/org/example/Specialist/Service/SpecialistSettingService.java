@@ -1,6 +1,6 @@
 package org.example.Specialist.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.example.Common.Exception.ApiException;
 import org.example.Service.Repository.ServiceRepository;
 import org.example.Specialist.DTO.CreateSettingsRequest;

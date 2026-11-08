@@ -1,6 +1,6 @@
 package org.example.Note.Service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.example.Appointment.Repository.AppointmentRepository;
 import org.example.Client.Entity.Client;
 import org.example.Client.Repository.ClientRepository;
