@@ -1,11 +1,9 @@
 package org.example.Appointment.Service;
 
 import org.example.Appointment.DTO.*;
-import org.example.Appointment.Entity.Appointment;
-import org.example.Appointment.Entity.AppointmentStatus;
-import org.example.Appointment.Entity.BookingSource;
-import org.example.Appointment.Entity.ClientActivityProjection;
+import org.example.Appointment.Entity.*;
 import org.example.Appointment.Repository.AppointmentRepository;
+import org.example.Appointment.Repository.SpecialistClientRepository;
 import org.example.Client.Entity.Client;
 import org.example.Client.Repository.ClientRepository;
 import org.example.Common.Exception.ApiException;
@@ -38,19 +36,22 @@ public class AppointmentService {
     private final ClientRepository clientRepository;
     private final AvailabilityService availabilityService;
     private final ServiceRepository serviceRepository;
+    private final SpecialistClientRepository specialistClientRepository;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               SpecialistRepository specialistRepository,
                               SpecialistSettingRepository specialistSettingRepository,
                               ClientRepository clientRepository,
                               AvailabilityService availabilityService,
-                              ServiceRepository serviceRepository){
+                              ServiceRepository serviceRepository,
+                              SpecialistClientRepository specialistClientRepository){
         this.appointmentRepository = appointmentRepository;
         this.specialistRepository = specialistRepository;
         this.specialistSettingRepository = specialistSettingRepository;
         this.clientRepository = clientRepository;
         this.availabilityService = availabilityService;
         this.serviceRepository = serviceRepository;
+        this.specialistClientRepository = specialistClientRepository;
     }
 
     @Transactional
@@ -331,6 +332,16 @@ public class AppointmentService {
         if (!available)
             throw new ApiException("Time is booked", HttpStatus.CONFLICT);
 
+        SpecialistClient specialistClient = specialistClientRepository
+                .findBySpecialist_IdAndClient_Id(specialist.getId(), client.getId())
+                .orElseGet(() -> SpecialistClient.builder()
+                        .specialist(specialist)
+                        .client(client)
+                        .status(ClientStatus.ACTIVE)
+                        .build());
+
+        specialistClient.setStatus(ClientStatus.ACTIVE);
+        specialistClientRepository.save(specialistClient);
         appointmentRepository.save(appointment);
         return appointment;
     }
