@@ -51,9 +51,8 @@ public class WorkingHoursController {
 
     @DeleteMapping("/{workingHourId}")
     public ResponseEntity<Void> deleteWorkingHours(@AuthenticationPrincipal UserPrincipal principal,
-                                                   @Valid @RequestBody UpdateWorkingHoursRequest request,
                                                    @PathVariable UUID workingHourId) {
-        WorkingHoursResponse response = workingHoursService.updateWorkingHours(principal.getId(), workingHourId, request);
+        workingHoursService.deleteWorkingHours(principal.getId(), workingHourId);
         return ResponseEntity.noContent().build();
     }
 
@@ -72,7 +71,7 @@ public class WorkingHoursController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PatchMapping("/exception/{exceptionId}")
+    @PatchMapping("/exceptions/{exceptionId}")
     public ResponseEntity<ScheduleExceptionResponse> updateScheduleException(@AuthenticationPrincipal UserPrincipal principal,
                                                                              @Valid @RequestBody UpdateScheduleExceptionRequest request,
                                                                              @PathVariable UUID exceptionId){
@@ -80,7 +79,7 @@ public class WorkingHoursController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @DeleteMapping("/exception/{exceptionId}")
+    @DeleteMapping("/exceptions/{exceptionId}")
     public ResponseEntity<Void> deleteScheduleException(@AuthenticationPrincipal UserPrincipal principal,
                                                         @PathVariable UUID exceptionId){
         scheduleExceptionService.deleteScheduleException(principal.getId(), exceptionId);
