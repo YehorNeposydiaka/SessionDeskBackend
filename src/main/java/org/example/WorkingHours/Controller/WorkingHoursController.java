@@ -5,11 +5,13 @@ import org.example.Security.UserPrincipal;
 import org.example.WorkingHours.DTO.*;
 import org.example.WorkingHours.Service.ScheduleExceptionService;
 import org.example.WorkingHours.Service.WorkingHoursService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,5 +64,26 @@ public class WorkingHoursController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/exceptions")
+    public ResponseEntity<List<ScheduleExceptionResponse>> getAllExceptionsForPeriod(@AuthenticationPrincipal UserPrincipal principal,
+                                                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+        List<ScheduleExceptionResponse> response = scheduleExceptionService.getSpecialistScheduleException(principal.getId(), startDate, endDate);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
+    @PatchMapping("/exception/{exceptionId}")
+    public ResponseEntity<ScheduleExceptionResponse> updateScheduleException(@AuthenticationPrincipal UserPrincipal principal,
+                                                                             @Valid @RequestBody UpdateScheduleExceptionRequest request,
+                                                                             @PathVariable UUID exceptionId){
+        ScheduleExceptionResponse response = scheduleExceptionService.updateScheduleException(principal.getId(), exceptionId, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @DeleteMapping("/exception/{exceptionId}")
+    public ResponseEntity<Void> deleteScheduleException(@AuthenticationPrincipal UserPrincipal principal,
+                                                        @PathVariable UUID exceptionId){
+        scheduleExceptionService.deleteScheduleException(principal.getId(), exceptionId);
+        return ResponseEntity.noContent().build();
+    }
 }
