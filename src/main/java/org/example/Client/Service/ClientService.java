@@ -1,5 +1,7 @@
 package org.example.Client.Service;
 
+import org.example.Appointment.Entity.SpecialistClient;
+import org.example.Appointment.Repository.SpecialistClientRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.example.Client.DTO.ClientResponse;
 import org.example.Client.DTO.CreateClientRequest;
@@ -7,15 +9,21 @@ import org.example.Client.Entity.Client;
 import org.example.Client.Repository.ClientRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class ClientService {
 
     private final ClientRepository clientRepository;
+    private final SpecialistClientRepository specialistClientRepository;
 
-    public ClientService(ClientRepository clientRepository) {
+    public ClientService(ClientRepository clientRepository,
+                         SpecialistClientRepository specialistClientRepository) {
         this.clientRepository = clientRepository;
+        this.specialistClientRepository = specialistClientRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,13 +45,23 @@ public class ClientService {
                 .nickname(request.nickname())
                 .build();
 
-        return toResponse(clientRepository.save(client));
+        return toClientResponse(clientRepository.save(client));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClientResponse> getAllSpecialistClients(UUID specialistId){
+        List<SpecialistClient> clients = specialistClientRepository.findAllBySpecialist_Id(specialistId);
+        List<Client> result = new ArrayList<>();
+        for(SpecialistClient client : clients){
+            result.add(client.getClient());
+        }
+        return result.stream().map(this::toClientResponse).toList();
     }
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private ClientResponse toResponse(Client client) {
+    private ClientResponse toClientResponse(Client client) {
         return new ClientResponse(
                 client.getId(),
                 client.getEmail(),
