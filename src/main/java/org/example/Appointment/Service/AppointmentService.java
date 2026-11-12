@@ -38,6 +38,7 @@ public class AppointmentService {
     private final ServiceRepository serviceRepository;
     private final SpecialistClientRepository specialistClientRepository;
 
+
     public AppointmentService(AppointmentRepository appointmentRepository,
                               SpecialistRepository specialistRepository,
                               SpecialistSettingRepository specialistSettingRepository,
@@ -53,7 +54,7 @@ public class AppointmentService {
         this.serviceRepository = serviceRepository;
         this.specialistClientRepository = specialistClientRepository;
     }
-    //TODO: Create method which returns empty(available) slots
+
     @Transactional
     public ClientAppointmentResponse createAppointmentByClient(String slug, CreateAppointmentRequest request){
         Appointment appointment = createAppointmentInternal(slug, request, BookingSource.CLIENT);
