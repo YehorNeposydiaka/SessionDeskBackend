@@ -10,7 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/specialist")
+@RequestMapping("/api/specialist")
 public class SpecialistController {
     private final SpecialistService specialistService;
     private final SpecialistSettingService specialistSettingService;

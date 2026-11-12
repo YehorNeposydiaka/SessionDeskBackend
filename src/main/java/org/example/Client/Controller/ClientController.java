@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/{slug}")
+@RequestMapping("/api")
 public class ClientController {
     private final ClientService clientService;
 
@@ -47,7 +47,9 @@ public class ClientController {
 
     @GetMapping("/clients")
     public ResponseEntity<List<ClientResponse>> getAllSpecialistClients(@AuthenticationPrincipal UserPrincipal principal){
-        List<ClientResponse> result =
+        List<ClientResponse> result = clientService.getAllSpecialistClients(principal.getId());
+
+        return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     public record EmailCheckResponse(boolean exists) {}

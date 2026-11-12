@@ -71,7 +71,11 @@ public class ServiceManagementService {
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
         List<org.example.Service.Entity.Service> services = serviceRepository.findAllServiceBySpecialist_Id(specialist.getId());
 
-        return services.stream()
+        List<org.example.Service.Entity.Service> result = services.stream()
+                .filter(service -> service != null && service.isActive())
+                .toList();
+
+        return result.stream()
                 .map(this::toServiceResponse)
                 .toList();
     }
