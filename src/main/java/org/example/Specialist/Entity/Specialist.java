@@ -38,8 +38,6 @@ public class Specialist {
     @Column(unique = true, length = 100)
     private String slug;
 
-   //TODO: Add default service. When client will book an appointment, the appointment creates with this value
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
