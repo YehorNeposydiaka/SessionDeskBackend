@@ -87,6 +87,11 @@ public class SecurityConfig {
                                 "/api/appointments/*/appointments"
                         ).permitAll()
 
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/services/*",
+                                "/api/specialist/*/booking-info"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

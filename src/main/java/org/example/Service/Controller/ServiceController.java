@@ -37,7 +37,7 @@ public class ServiceController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @GetMapping("/{serviceId}")
+    @GetMapping("/id/{serviceId}")
     public ResponseEntity<ServiceResponse> getServiceById(@PathVariable UUID serviceId){
         ServiceResponse response = serviceManagementService.getServiceById(serviceId);
 
