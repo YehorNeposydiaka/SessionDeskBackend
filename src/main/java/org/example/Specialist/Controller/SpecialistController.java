@@ -53,5 +53,13 @@ public class SpecialistController {
         return ResponseEntity.ok(specialistSettingService.updateSettings(principal.getId(), request));
     }
 
+    @GetMapping("/{slug}/booking-info")
+    public ResponseEntity<SpecialistBookingInfoResponse> getBookingInfo(
+            @PathVariable String slug
+    ) {
+        return ResponseEntity.ok(
+                specialistService.getBookingInfoBySlug(slug)
+        );
+    }
     //TODO: Implement specialist card by slug
 }

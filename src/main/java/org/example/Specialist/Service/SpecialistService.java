@@ -1,11 +1,11 @@
 package org.example.Specialist.Service;
 
 import org.example.Common.Exception.ApiException;
-import org.example.Specialist.DTO.ChangePasswordRequest;
-import org.example.Specialist.DTO.SpecialistResponse;
-import org.example.Specialist.DTO.UpdateSpecialistRequest;
+import org.example.Specialist.DTO.*;
 import org.example.Specialist.Entity.Specialist;
+import org.example.Specialist.Entity.SpecialistSettings;
 import org.example.Specialist.Repository.SpecialistRepository;
+import org.example.Specialist.Repository.SpecialistSettingRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,12 +16,15 @@ import java.util.UUID;
 @Service
 public class SpecialistService {
     private final SpecialistRepository specialistRepository;
+    private final SpecialistSettingRepository specialistSettingRepository;
     private final PasswordEncoder passwordEncoder;
 
     public SpecialistService(SpecialistRepository specialistRepository,
-                             PasswordEncoder passwordEncoder){
+                             PasswordEncoder passwordEncoder,
+                             SpecialistSettingRepository specialistSettingRepository){
         this.specialistRepository = specialistRepository;
         this.passwordEncoder = passwordEncoder;
+        this.specialistSettingRepository = specialistSettingRepository;
     }
 
     public SpecialistResponse getSpecialistById(UUID specialistId){
@@ -29,10 +32,44 @@ public class SpecialistService {
                 .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
         return toSpecialistResponse(specialist);
     }
-    public SpecialistResponse getSpecialistBySlug(String slug){
+
+    @Transactional(readOnly = true)
+    public SpecialistBookingInfoResponse getBookingInfoBySlug(String slug) {
         Specialist specialist = specialistRepository.findBySlug(slug)
-                .orElseThrow(() -> new ApiException("Specialist not found", HttpStatus.NOT_FOUND));
-        return toSpecialistResponse(specialist);
+                .orElseThrow(() ->
+                        new ApiException("Specialist not found", HttpStatus.NOT_FOUND)
+                );
+
+        SpecialistSettings settings =
+                specialistSettingRepository.findBySpecialist_Id(specialist.getId())
+                        .orElseThrow(() ->
+                                new ApiException("Settings not found", HttpStatus.NOT_FOUND)
+                        );
+
+        org.example.Service.Entity.Service defaultService =
+                settings.getDefaultService();
+
+        PublicBookingServiceResponse defaultServiceResponse =
+                defaultService == null
+                        ? null
+                        : new PublicBookingServiceResponse(
+                        defaultService.getId(),
+                        defaultService.getServiceName(),
+                        defaultService.getDescription(),
+                        defaultService.getPrice(),
+                        defaultService.getDuration()
+                );
+
+        return new SpecialistBookingInfoResponse(
+                specialist.getAvatarUrl(),
+                specialist.getFullName(),
+                specialist.getIban(),
+                specialist.getPaymentDetails(),
+                settings.getMaxBookingDaysAhead(),
+                settings.getMinBookingNoticeHours(),
+                settings.isServiceSelectable(),
+                defaultServiceResponse
+        );
     }
 
     @Transactional
