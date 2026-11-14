@@ -34,7 +34,10 @@ public class ClientController {
             String email
     ) {
         boolean exists = clientService.emailExists(email);
-        return ResponseEntity.ok(new EmailCheckResponse(exists));
+        UUID clientId = null;
+        if(exists)
+            clientId =  clientService.getIdByEmail(email);
+        return ResponseEntity.ok(new EmailCheckResponse(exists, clientId));
     }
 
     @PostMapping("/{slug}")
@@ -52,5 +55,5 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
-    public record EmailCheckResponse(boolean exists) {}
+    public record EmailCheckResponse(boolean exists, UUID clientId) {}
 }

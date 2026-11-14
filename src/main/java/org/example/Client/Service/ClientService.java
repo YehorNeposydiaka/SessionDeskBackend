@@ -31,6 +31,11 @@ public class ClientService {
         return clientRepository.existsByEmailIgnoreCase(normalizeEmail(email));
     }
 
+    @Transactional(readOnly = true)
+    public UUID getIdByEmail(String email) {
+        return clientRepository.findByEmailIgnoreCase(email).get().getId();
+    }
+
     @Transactional
     public ClientResponse createClient(CreateClientRequest request) {
         String email = normalizeEmail(request.email());
