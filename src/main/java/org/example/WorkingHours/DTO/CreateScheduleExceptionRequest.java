@@ -12,5 +12,5 @@ public record CreateScheduleExceptionRequest (
     @NotNull LocalDate date,
     @NotNull LocalTime startTime,
     @NotNull LocalTime endTime,
-    @NotBlank ScheduleExceptionType type
+    @NotNull ScheduleExceptionType type
 ){}
